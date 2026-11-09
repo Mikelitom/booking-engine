@@ -231,17 +231,16 @@ The system shall prevent overlapping confirmed reservations for the same room.
 - Conflicting requests receive an appropriate HTTP error response.
 - Database constraints enforce the invariant independently of application-level checks.
 
-### FR-012 — Cancel Reservation
-
-The system shall allow authorized users to cancel reservations.
-
 **Acceptance Criteria:**
 
-- Users can cancel their own reservations.
-- Administrators can cancel any reservation.
+- Users can cancel their own future reservations.
+- Administrators can cancel future and ongoing reservations.
+- Regular users cannot cancel ongoing reservations.
+- Completed reservations cannot be cancelled.
 - Cancelled reservations remain stored.
 - Cancelled reservations no longer block room availability.
-- Repeated cancellation requests do not corrupt reservation state.
+- Repeated cancellation requests do not modify reservation state.
+- Unauthorized cancellation attempts are rejected.
 
 ### FR-013 — List Reservations
 
@@ -317,9 +316,24 @@ Deactivating a room prevents new reservations but does not automatically modify 
 
 ### BR-009 — Cancellation
 
-A confirmed reservation may be cancelled by its owner or an administrator.
+Reservation cancellation depends on the reservation's current time interval and the requesting user's role.
 
-A cancelled reservation cannot return to the confirmed state in the MVP.
+The following rules apply:
+
+- **Future reservations:** The reservation owner or an administrator may cancel the reservation.
+- **Ongoing reservations:** Only an administrator may cancel the reservation.
+- **Completed reservations:** Cancellation is not permitted.
+- **Already cancelled reservations:** Repeated cancellation requests must not modify the reservation state.
+
+A reservation is considered:
+
+- **Future:** `current_time < starts_at`
+- **Ongoing:** `starts_at <= current_time < ends_at`
+- **Completed:** `current_time >= ends_at`
+
+Cancelled reservations must remain stored for historical purposes and must not block future availability.
+
+The `CANCELLED` state is terminal.
 
 ### BR-010 — Time Zone Handling
 
